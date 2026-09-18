@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { btnGhost, card, cardHeading } from '../ui'
 
 interface Props {
   topic: string
@@ -27,19 +28,20 @@ export function ReportView({ topic, report }: Props) {
   }
 
   return (
-    <section className="card report-card">
-      <header className="card-head">
-        <h2>Research Report</h2>
-        <div className="card-actions">
-          <button type="button" className="btn btn-ghost" onClick={copy}>
+    <section className={`${card} p-5 sm:p-7`}>
+      <header className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 dark:border-white/10">
+        <h2 className={cardHeading}>Research Report</h2>
+        <div className="flex gap-2">
+          <button type="button" className={btnGhost} onClick={copy}>
             {copied ? 'Copied' : 'Copy'}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={download}>
+          <button type="button" className={btnGhost} onClick={download}>
             Download .md
           </button>
         </div>
       </header>
-      <article className="markdown">
+
+      <article className="prose-report">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
