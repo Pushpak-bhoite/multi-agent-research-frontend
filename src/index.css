@@ -33,7 +33,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 antialiased transition-colors duration-300;
+    @apply min-h-dvh bg-slate-50 bg-fixed bg-no-repeat text-slate-800 antialiased transition-colors duration-300;
     @apply dark:bg-[#0b0d12] dark:text-slate-200;
     background-image: radial-gradient(900px 420px at 12% -8%, rgb(124 92 255 / 0.12), transparent 60%);
   }
