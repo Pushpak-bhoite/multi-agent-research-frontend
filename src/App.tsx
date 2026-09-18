@@ -1,122 +1,92 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { AgentTimeline } from './components/AgentTimeline'
+import { CritiqueCard } from './components/CritiqueCard'
+import { ReportView } from './components/ReportView'
+import { SourcesList } from './components/SourcesList'
+import { TopicForm } from './components/TopicForm'
+import { useResearchRun } from './hooks/useResearchRun'
+import type { StepState } from './types'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const run = useResearchRun()
+  const isRunning = run.status === 'running'
+  const hasStarted = run.status !== 'idle'
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <span className="brand-dot" aria-hidden />
+          <div>
+            <h1>Multi-Agent Researcher</h1>
+            <p className="muted">Search → Read → Write → Critique, powered by Gemini + Tavily</p>
+          </div>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        {hasStarted && (
+          <button type="button" className="btn btn-ghost" onClick={run.reset} disabled={isRunning}>
+            New research
+          </button>
+        )}
+      </header>
 
-      <div className="ticks"></div>
+      <main className="app-main">
+        <section className="hero">
+          {run.topic && (
+            <>
+              <p className="eyebrow">Topic</p>
+              <h2 className="topic-title">{run.topic}</h2>
+            </>
+          )}
+          <TopicForm isRunning={isRunning} onSubmit={run.start} onStop={run.stop} />
+        </section>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {hasStarted && (
+          <div className="layout">
+            <aside className="sidebar">
+              <section className="card">
+                <header className="card-head">
+                  <h2>Pipeline</h2>
+                  {isRunning && <span className="spinner" aria-label="running" />}
+                </header>
+                <AgentTimeline steps={run.steps} />
+              </section>
+              <SourcesList sources={run.sources} />
+            </aside>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+            <div className="content">
+              {run.error && (
+                <div className="card error-card" role="alert">
+                  <strong>Run failed</strong>
+                  <p>{run.error}</p>
+                </div>
+              )}
+
+              {run.report ? (
+                <ReportView topic={run.topic} report={run.report} />
+              ) : (
+                !run.error && <WaitingCard steps={run.steps} />
+              )}
+
+              {run.feedback && <CritiqueCard feedback={run.feedback} score={run.score} />}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
 
-export default App
+function WaitingCard({ steps }: { steps: StepState[] }) {
+  const active = steps.find((step) => step.status === 'running')
+  return (
+    <section className="card placeholder">
+      <span className="spinner big" aria-hidden />
+      <h2>{active ? active.label : 'Starting agents'}</h2>
+      <p className="muted">{active ? active.description : 'Warming up the pipeline…'}</p>
+      <div className="skeleton-lines">
+        <span />
+        <span />
+        <span />
+      </div>
+    </section>
+  )
+}
