@@ -28,7 +28,7 @@ export default function App() {
               Multi-Agent Researcher
             </h1>
             <p className="hidden text-xs text-slate-500 sm:block dark:text-slate-400">
-              Search → Read → Write → Critique, powered by Gemini + Tavily
+              Search → Read → Write → Critique, powered by OpenAI + Tavily
             </p>
           </div>
         </div>

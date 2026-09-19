@@ -8,6 +8,9 @@ const STEPS: StepState[] = [
   { id: 'critique', label: 'Critic Agent', description: 'Reviewing and scoring the report', status: 'pending' },
 ]
 
+// Blank in dev so requests go through the Vite proxy instead of cross-origin.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
+
 // tools.web_search formats every hit as "Title: ...\nURL: ...\nSnippet: ..."
 const SOURCE_PATTERN = /Title:\s*(.+?)\s*\nURL:\s*(https?:\/\/\S+)/g
 const SCORE_PATTERN = /Score:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i
@@ -75,7 +78,7 @@ export function useResearchRun() {
       setState({ ...initialState, status: 'running', topic: trimmed })
 
       try {
-        const response = await fetch('/api/research', {
+        const response = await fetch(`${API_BASE_URL}/api/research`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ topic: trimmed }),
