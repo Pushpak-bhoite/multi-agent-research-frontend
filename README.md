@@ -1,75 +1,130 @@
-# React + TypeScript + Vite
+# Multi-Agent Researcher — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> A polished React interface for an AI research assistant that searches, reads, writes, and critiques research in a transparent multi-agent workflow.
 
-Currently, two official plugins are available:
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=20232A)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Live Demo
 
-## React Compiler
+**[Open the Multi-Agent Research Assistant →](https://multi-agent-research-frontend.bhoitepushpak6.workers.dev)**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Related Repository
 
-## Expanding the ESLint configuration
+This repository contains the React frontend. The research agents, retrieval tools, and report-generation pipeline are maintained in the backend repository:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend:** [multi-agent-research-frontend](https://github.com/Pushpak-bhoite/multi-agent-research-frontend) *(this repository)*
+- **Backend:** [multi-agent-research-backend](https://github.com/Pushpak-bhoite/multi-agent-research-backend)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Overview
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The application gives users a clear view of an AI research run from start to finish. A user submits a topic and can follow the pipeline as the backend progresses through:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+Search → Read → Write → Critique
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+The interface displays the active pipeline step, discovered sources, generated report, and critic feedback in a responsive layout with light and dark themes.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Features
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Topic submission form for starting a research run
+- Real-time-style agent timeline showing pipeline progress
+- Research report rendering with Markdown support
+- Source list for browsing retrieved references
+- Critique card with score, strengths, and improvement areas
+- Stop and start-over controls for research runs
+- Responsive desktop and mobile layouts
+- Light/dark theme toggle
+- Clear error states when a research run fails
+- Accessible labels and semantic UI structure
 
+## Tech Stack
+
+- **React 19** with functional components and hooks
+- **TypeScript** for type-safe application code
+- **Vite** for development and production builds
+- **Tailwind CSS 4** for styling
+- **React Markdown** and **remark-gfm** for report rendering
+- **ESLint** for code quality
+
+## Project Structure
+
+```text
+.
+├── src/
+│   ├── components/       # Timeline, report, sources, critique, and UI components
+│   ├── hooks/            # Research-run and theme state hooks
+│   ├── types.ts          # Shared frontend types
+│   ├── ui.ts             # Reusable UI class names
+│   ├── App.tsx           # Main application layout
+│   ├── main.tsx          # React application entry point
+│   └── index.css         # Global styles and Tailwind configuration
+├── public/               # Static assets
+├── package.json          # Scripts and dependencies
+├── vite.config.ts        # Vite configuration
+└── eslint.config.js      # ESLint configuration
 ```
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Pushpak-bhoite/multi-agent-research-frontend.git
+cd multi-agent-research-frontend
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Start the development server
+
+```bash
+npm run dev
+```
+
+Open the local URL shown by Vite in your browser.
+
+### 4. Create a production build
+
+```bash
+npm run build
+```
+
+### 5. Run linting
+
+```bash
+npm run lint
+```
+
+## Backend Integration
+
+The frontend is designed to work with the companion Python backend:
+
+[View the Multi-Agent Research Backend →](https://github.com/Pushpak-bhoite/multi-agent-research-backend)
+
+The backend uses Google Gemini for generation, Tavily for web search, HTTPX and BeautifulSoup for source extraction, and specialized agents for search, reading, writing, and critique.
+
+## Design Highlights
+
+- **Progress visibility:** users can see where the research run is in the pipeline instead of waiting on an unexplained loading state.
+- **Readable output:** reports are rendered as structured Markdown, making long-form research easier to scan.
+- **Focused composition:** the interface is split into reusable components for the timeline, report, sources, critique, topic form, and theme controls.
+- **Responsive experience:** the layout adapts from a two-column desktop workspace to a mobile-friendly single-column view.
+
+## Author
+
+Built by **Pushpak Bhoite** as a full-stack exploration of multi-agent AI systems and research-oriented user experiences.
+
+- GitHub: [@Pushpak-bhoite](https://github.com/Pushpak-bhoite)
+- Live demo: [multi-agent-research-frontend.bhoitepushpak6.workers.dev](https://multi-agent-research-frontend.bhoitepushpak6.workers.dev)
+
+## License
+
+No license has been specified yet. Add a `LICENSE` file if you want to define terms for using, modifying, and distributing this project.
