@@ -117,10 +117,12 @@ function WaitingCard({ steps }: { steps: StepState[] }) {
     <section className={`${card} flex flex-col items-center gap-2.5 px-6 py-14 text-center`}>
       <Spinner className="size-8 border-[3px]" />
       <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-        {active ? active.label : 'Starting agents'}
+        {active ? active.label : 'Agents are working'}
       </h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        {active ? active.description : 'Warming up the pipeline…'}
+      <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
+        {active
+          ? active.description
+          : 'All four agents run server-side and the results arrive together. This usually takes a minute.'}
       </p>
 
       <div className="mt-5 flex w-full max-w-lg flex-col gap-2.5">

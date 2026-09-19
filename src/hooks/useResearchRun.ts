@@ -1,12 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ResearchEvent, Source, StepId, StepState } from '../types'
+import type { ResearchResponse, Source, StepState } from '../types'
 
-const DEFAULT_STEPS: StepState[] = [
+const STEPS: StepState[] = [
   { id: 'search', label: 'Search Agent', description: 'Finding reliable sources on the web', status: 'pending' },
   { id: 'read', label: 'Reader Agent', description: 'Scraping the most relevant page', status: 'pending' },
   { id: 'write', label: 'Writer Agent', description: 'Drafting the research report', status: 'pending' },
   { id: 'critique', label: 'Critic Agent', description: 'Reviewing and scoring the report', status: 'pending' },
 ]
+
+// tools.web_search formats every hit as "Title: ...\nURL: ...\nSnippet: ..."
+const SOURCE_PATTERN = /Title:\s*(.+?)\s*\nURL:\s*(https?:\/\/\S+)/g
+const SCORE_PATTERN = /Score:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i
+
+function extractSources(text: string): Source[] {
+  const sources: Source[] = []
+  const seen = new Set<string>()
+  for (const match of text.matchAll(SOURCE_PATTERN)) {
+    const url = match[2].replace(/[.,)]+$/, '')
+    if (seen.has(url)) continue
+    seen.add(url)
+    sources.push({ title: match[1], url })
+  }
+  return sources
+}
+
+function extractScore(feedback: string): number | null {
+  const match = SCORE_PATTERN.exec(feedback)
+  return match ? Number(match[1]) : null
+}
 
 export type RunStatus = 'idle' | 'running' | 'done' | 'error'
 
@@ -24,7 +45,7 @@ interface RunState {
 const initialState: RunState = {
   status: 'idle',
   topic: '',
-  steps: DEFAULT_STEPS,
+  steps: STEPS,
   sources: [],
   report: '',
   feedback: '',
@@ -32,72 +53,75 @@ const initialState: RunState = {
   error: null,
 }
 
-function applyEvent(state: RunState, event: ResearchEvent): RunState {
-  switch (event.type) {
-    case 'start':
-      return {
-        ...initialState,
-        status: 'running',
-        topic: event.topic,
-        steps: event.steps.map((step) => ({ ...step, status: 'pending' })),
-      }
-    case 'step':
-      return { ...state, steps: state.steps.map((step) => (step.id === event.step ? { ...step, status: event.status, output: event.output ?? step.output } : step)) }
-    case 'sources':
-      return { ...state, sources: event.sources }
-    case 'report':
-      return { ...state, report: event.report }
-    case 'critique':
-      return { ...state, feedback: event.feedback, score: event.score }
-    case 'done':
-      return { ...state, status: 'done' }
-    case 'error':
-      return { ...state, status: 'error', error: event.message }
-    default:
-      return state
-  }
-}
-
 export function useResearchRun() {
   const [state, setState] = useState<RunState>(initialState)
-  const sourceRef = useRef<EventSource | null>(null)
+  const controllerRef = useRef<AbortController | null>(null)
 
   const stop = useCallback(() => {
-    sourceRef.current?.close()
-    sourceRef.current = null
+    controllerRef.current?.abort()
+    controllerRef.current = null
   }, [])
 
   useEffect(() => stop, [stop])
 
   const start = useCallback(
-    (topic: string) => {
+    async (topic: string) => {
       const trimmed = topic.trim()
       if (trimmed.length < 3) return
 
       stop()
+      const controller = new AbortController()
+      controllerRef.current = controller
       setState({ ...initialState, status: 'running', topic: trimmed })
 
-      const source = new EventSource(`/api/research/stream?topic=${encodeURIComponent(trimmed)}`)
-      sourceRef.current = source
+      try {
+        const response = await fetch('/api/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: trimmed }),
+          signal: controller.signal,
+        })
 
-      source.onmessage = (message) => {
-        let event: ResearchEvent
-        try {
-          event = JSON.parse(message.data) as ResearchEvent
-        } catch {
+        if (!response.ok) {
+          const detail = await response
+            .json()
+            .then((body: { detail?: string }) => body.detail)
+            .catch(() => null)
+          throw new Error(detail || `Research API responded with ${response.status} ${response.statusText}`)
+        }
+
+        const data = (await response.json()) as ResearchResponse
+        const outputs: Record<string, string> = {
+          search: data.search_results,
+          read: data.scraped_content,
+          write: data.report,
+          critique: data.feedback,
+        }
+
+        setState((prev) => ({
+          ...prev,
+          status: 'done',
+          steps: prev.steps.map((step) => ({ ...step, status: 'done', output: outputs[step.id] })),
+          sources: extractSources(data.search_results ?? ''),
+          report: data.report ?? '',
+          feedback: data.feedback ?? '',
+          score: extractScore(data.feedback ?? ''),
+        }))
+      } catch (error) {
+        if (controller.signal.aborted) {
+          setState((prev) => ({ ...prev, status: 'idle' }))
           return
         }
-        setState((prev) => applyEvent(prev, event))
-        if (event.type === 'done' || event.type === 'error') stop()
-      }
-
-      source.onerror = () => {
-        stop()
-        setState((prev) =>
-          prev.status === 'running'
-            ? { ...prev, status: 'error', error: 'Lost connection to the research API. Is the backend running on port 8000?' }
-            : prev,
-        )
+        setState((prev) => ({
+          ...prev,
+          status: 'error',
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Could not reach the research API. Is the backend running on port 8000?',
+        }))
+      } finally {
+        controllerRef.current = null
       }
     },
     [stop],
@@ -108,7 +132,5 @@ export function useResearchRun() {
     setState(initialState)
   }, [stop])
 
-  const activeStep: StepId | null = state.steps.find((step) => step.status === 'running')?.id ?? null
-
-  return { ...state, activeStep, start, stop, reset }
+  return { ...state, start, stop, reset }
 }
